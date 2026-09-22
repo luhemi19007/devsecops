@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Forma — Estudio de diseño 3D con IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+
+  <div class="app">
+
+    <!-- Barra superior -->
+    <header class="topbar">
+      <div class="brand">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M3 7l9 5 9-5M12 12v10" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+        <span>Forma</span>
+      </div>
+
+      <div class="topbar-tools">
+        <button class="tool-btn" data-mode="translate" title="Mover (G)">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 2v20M2 12h20M5 8l-3 4 3 4M19 8l3 4-3 4M8 5l4-3 4 3M8 19l4 3 4-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Mover
+        </button>
+        <button class="tool-btn" data-mode="rotate" title="Rotar (R)">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M21 12a9 9 0 11-3.2-6.9M21 3v6h-6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Rotar
+        </button>
+        <button class="tool-btn" data-mode="scale" title="Escalar (S)">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 20h6v-6M20 4h-6v6M4 20L10 14M20 4L14 10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Escalar
+        </button>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="btn-reset-view" class="icon-btn" title="Recentrar vista">⌂</button>
+        <button id="btn-undo" class="icon-btn" title="Deshacer (Ctrl+Z)">↶</button>
+        <button id="btn-redo" class="icon-btn" title="Rehacer (Ctrl+Y)">↷</button>
+        <span class="divider"></span>
+        <button id="btn-save" class="icon-btn" title="Guardar escena">Guardar</button>
+        <button id="btn-load" class="icon-btn" title="Cargar escena">Abrir</button>
+        <button id="btn-export" class="icon-btn accent" title="Exportar a GLTF">Exportar</button>
+      </div>
+    </header>
+
+    <div class="workspace">
+
+      <!-- Panel izquierdo: primitivas + jerarquía -->
+      <aside class="panel panel-left">
+        <section class="panel-section">
+          <h3>Añadir forma</h3>
+          <div class="shape-grid">
+            <button class="shape-btn" data-shape="box"><span class="shape-icon">▧</span>Cubo</button>
+            <button class="shape-btn" data-shape="sphere"><span class="shape-icon">●</span>Esfera</button>
+            <button class="shape-btn" data-shape="cylinder"><span class="shape-icon">▮</span>Cilindro</button>
+            <button class="shape-btn" data-shape="cone"><span class="shape-icon">▲</span>Cono</button>
+            <button class="shape-btn" data-shape="torus"><span class="shape-icon">◎</span>Toroide</button>
+            <button class="shape-btn" data-shape="plane"><span class="shape-icon">▭</span>Plano</button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h3>Impresión 3D</h3>
+          <div class="print-readout">
+            <span>Tamaño (mm)</span>
+            <strong id="print-size">—</strong>
+          </div>
+          <label class="field print-scale-field">
+            <span>1 unidad = <span id="print-scale-label">10</span> mm</span>
+            <input type="range" id="print-scale" min="1" max="100" value="10" step="1" />
+          </label>
+          <button id="btn-ground" class="ghost-btn">Apoyar todo en la base</button>
+          <button id="btn-export-stl" class="ghost-btn accent-border">Exportar STL</button>
+          <p class="print-note">Cada forma se exporta como un sólido independiente. Para que impriman como una sola pieza, deben tocarse o solaparse entre sí.</p>
+        </section>
+
+        <section class="panel-section grow">
+          <h3>Jerarquía <span id="obj-count" class="muted"></span></h3>
+          <ul id="hierarchy-list" class="hierarchy-list"></ul>
+        </section>
+      </aside>
+
+      <!-- Viewport central -->
+      <main class="viewport-wrap">
+        <canvas id="viewport"></canvas>
+
+        <div class="viewport-hint" id="empty-hint">
+          <p>Lienzo vacío</p>
+          <span>Añade una forma desde el panel, o descríbela abajo y deja que el asistente la construya.</span>
+        </div>
+
+        <div class="gizmo-hint">
+          <span id="mode-label">mover</span> · clic para seleccionar · rueda para zoom
+        </div>
+      </main>
+
+      <!-- Panel derecho: inspector -->
+      <aside class="panel panel-right" id="inspector">
+        <section class="panel-section">
+          <h3>Inspector</h3>
+          <div id="inspector-empty" class="muted small">Ningún objeto seleccionado.</div>
+          <div id="inspector-body" class="inspector-body hidden">
+            <label class="field">
+              <span>Nombre</span>
+              <input type="text" id="prop-name" />
+            </label>
+
+            <div class="field-row">
+              <label class="field"><span>Pos X</span><input type="number" step="0.1" id="prop-px"/></label>
+              <label class="field"><span>Pos Y</span><input type="number" step="0.1" id="prop-py"/></label>
+              <label class="field"><span>Pos Z</span><input type="number" step="0.1" id="prop-pz"/></label>
+            </div>
+            <div class="field-row">
+              <label class="field"><span>Rot X</span><input type="number" step="1" id="prop-rx"/></label>
+              <label class="field"><span>Rot Y</span><input type="number" step="1" id="prop-ry"/></label>
+              <label class="field"><span>Rot Z</span><input type="number" step="1" id="prop-rz"/></label>
+            </div>
+            <div class="field-row">
+              <label class="field"><span>Esc X</span><input type="number" step="0.1" id="prop-sx"/></label>
+              <label class="field"><span>Esc Y</span><input type="number" step="0.1" id="prop-sy"/></label>
+              <label class="field"><span>Esc Z</span><input type="number" step="0.1" id="prop-sz"/></label>
+            </div>
+
+            <label class="field">
+              <span>Color</span>
+              <input type="color" id="prop-color" />
+            </label>
+
+            <label class="field">
+              <span>Material</span>
+              <select id="prop-material">
+                <option value="standard">Estándar</option>
+                <option value="metal">Metálico</option>
+                <option value="glass">Cristal</option>
+                <option value="matte">Mate</option>
+              </select>
+            </label>
+
+            <button id="btn-duplicate" class="ghost-btn">Duplicar</button>
+            <button id="btn-delete" class="ghost-btn danger">Eliminar</button>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <!-- Consola del asistente IA -->
+    <footer class="ai-console">
+      <div class="ai-console-header">
+        <span class="ai-dot"></span>
+        <span>Asistente de diseño</span>
+        <span class="muted small">— describe lo que quieres construir</span>
+      </div>
+      <div class="ai-log" id="ai-log"></div>
+      <form id="ai-form" class="ai-input-row">
+        <input type="text" id="ai-input" placeholder='Ej: "añade una esfera roja", "construye una casa", "mueve el cubo a 2 0 0"' autocomplete="off" />
+        <button type="submit">Generar</button>
+      </form>
+    </footer>
+
+  </div>
+
+  <input type="file" id="file-input" accept="application/json" style="display:none" />
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.161.0/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
