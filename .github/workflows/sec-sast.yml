@@ -1,0 +1,42 @@
+# SAST = Static Application Security Testing: analiza el código fuente en
+# busca de patrones inseguros (XSS, inyecciones, uso peligroso de eval,
+# etc.) sin necesidad de ejecutarlo. Se dispara en cada push y en cada
+# Pull Request hacia main.
+
+name: SAST — análisis estático (Semgrep)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write   # necesario para publicar resultados en la pestaña "Security"
+
+jobs:
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Ejecutar Semgrep
+        run: |
+          semgrep scan \
+            --config p/default \
+            --config p/javascript \
+            --config p/owasp-top-ten \
+            --sarif --output=semgrep-results.sarif
+        continue-on-error: true
+
+      - name: Subir resultados a GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep-results.sarif
