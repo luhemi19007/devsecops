@@ -24,7 +24,7 @@ jobs:
       image: semgrep/semgrep
     steps:
       - name: Descargar el código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Ejecutar Semgrep
         run: |
