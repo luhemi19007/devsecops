@@ -1,0 +1,26 @@
+# Dependabot revisa periódicamente si hay versiones nuevas (por seguridad
+# o por mantenimiento) y abre un Pull Request automático cuando las hay.
+#
+# Este proyecto no usa npm (las librerías se cargan por CDN en src/index.html),
+# así que el ecosistema relevante hoy es "github-actions": mantiene al día
+# las Actions que usan los workflows de .github/workflows/. El bloque "npm"
+# queda listo por si en el futuro añades un package.json.
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "ci"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
